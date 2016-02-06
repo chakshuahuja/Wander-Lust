@@ -1,0 +1,17 @@
+<html>
+  <head>
+  </head>
+  <body>
+	<br/>
+    Trip id : {{tripid}} :)
+	<br/>
+    Trip Start Point : {{trip_start_location}} :)
+    <form action="/pitstop/{{userid}}/{{tripid}}">
+      <input type=submit value="Add Pit Stop"></input>
+    </form>
+	<br/>
+    <form action="/end/{{userid}}/{{tripid}}">
+      <input type=submit value="End Trip"></input>
+    </form>
+  </body>
+</html>

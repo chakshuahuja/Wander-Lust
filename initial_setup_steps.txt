@@ -1,0 +1,4 @@
+sudo pip install flask
+sudo pip install flask-sqlalchemy
+sudo pip install flask-login
+sudo pip install flask-wtf

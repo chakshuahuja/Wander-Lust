@@ -1,0 +1,21 @@
+<html>
+  <head>
+  </head>
+  <body>
+	<br/>
+    User id : {{userid}} :)
+    <form action="/start/{{userid}}">
+      <input type=submit value="Start Trip"></input>
+    </form>
+	<br/>
+    <form action="">
+      <input type=submit value="View My Trips"></input>
+    </form>
+    
+    <form action="/search?{{userid}}">
+      <input type="text" name="From"></input>
+      <input type="text" name="To"></input>
+      <input type="submit" value="Search"></input>
+    </form>
+  </body>
+</html>

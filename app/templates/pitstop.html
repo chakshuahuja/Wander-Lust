@@ -1,0 +1,17 @@
+<html>
+<title>WanderLust</title>
+    <body>
+        <h1 align=center> Add PitStop </h1>
+        <form action="/pitstop/{{userid}}/{{tripid}}" method="POST" align=center enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        <!--p>Enter Location {{form.location}}</p>
+        <p>Enter Timestamp {{form.timestamp}} </p>
+        <p>Enter Text {{form.text}}</p-->
+	<input type="text" name='location' value="Location"></input>	
+	<input type="text" name='timestamp' value="Timestamp"></input>	
+	<input type="text" name='text' value="Text"></input>        
+	<input type="file" name='image' value="Image"></input>
+        <input type="submit" value="add check point"></input>
+	</form>
+    </body>
+</html>

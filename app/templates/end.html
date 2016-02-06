@@ -1,0 +1,13 @@
+<html>
+<title>WanderLust</title>
+    <body>
+        <h1 align=center> End Trip </h1>
+        <form action="" method="POST" align=center>
+        {{ form.hidden_tag() }}
+        <p>Enter Privacy {{form.privacy}}</p>
+        <p>Enter Rating {{form.rating}} </p>
+        <p>Enter End Location {{form.end_location}}</p>
+        <p>Enter End TimeStamp {{ form.end_timestamp }} </p>
+        <button type="submit" value="end trip">End Trip</button>
+    </body>
+</html>

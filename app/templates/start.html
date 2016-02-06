@@ -1,0 +1,14 @@
+<html>
+<title>WanderLust</title>
+    <body>
+        <h1 align=center> Start Trip </h1>
+        <form action="" method="POST" align=center>
+        {{ form.hidden_tag() }}
+        <p>Enter Trip Type {{form.trip_type}}</p>
+        <p>Enter Trip Friends {{form.trip_friends}} </p>
+        <p>Enter Vehicle {{form.vehicle}}</p>
+        <p>Enter Start Location {{form.start_location}}</p>
+        <p>Enter Start TimeStamp {{ form.start_timestamp }} </p>
+        <button type="submit" value="start trip">Start Trip</button>
+    </body>
+</html>
