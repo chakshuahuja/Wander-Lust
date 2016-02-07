@@ -165,3 +165,30 @@ def profileinfo():
     return redirect(url_for('dashboard', userid = userid))
 
 
+@app.route('/chatbot/<threadID>/', methods=["GET"])
+def chatbot(threadID):
+    print 'Did I enter'
+    msg = request.args.get('msg')
+    print msg
+    places = msg.split('#')[1:]
+    print places
+    start_end = []
+    for place in places:
+	place = str(place)
+        start_end.append(place.split(' ')[0])
+    start = start_end[0]
+    end = start_end[1]
+    print start, end
+    map_info = dict()
+    trip = TripsMaster.query.filter_by(start_location=start, end_location=end).first()
+    map_info['start_location'] = str(trip.start_location)
+    map_info['end_location'] = str(trip.end_location)
+    map_info['rating'] = str(trip.rating)
+    map_info['vehicle'] = str(trip.vehicle)
+    map_info['start_timestamp'] = str(trip.start_timestamp)
+    map_info['end_timestamp'] = str(trip.end_timestamp)
+    map_info['map_markers'] = []
+    for x in TripDetails.query.filter_by(tripsmaster=TripsMaster.query.get(trip.id)):
+       	map_info['map_markers'].append(dict(location=x.location, text=x.text, image=x.image))
+
+    return json.dumps(map_info)
