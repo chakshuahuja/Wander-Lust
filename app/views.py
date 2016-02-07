@@ -21,95 +21,28 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
 @app.route('/')
-@app.route('/index')
-def index():
+@app.route('/user', methods=["GET","POST"])
+def user():
 #    return 'Hello duniya'
-    return render_template('index.html')
-
-@app.route('/tripstarted/<userid>/<tripid>')
-def tripstarted(tripid, userid):
-
-    trip = TripsMaster.query.get(tripid)
-    return render_template('tripstarted.html',tripid=tripid,userid=userid,trip_start_location=trip.start_location)
-
-@app.route('/dashboard/<userid>', methods=["GET"])
-def dashboard(userid):
     if request.method == 'GET':
-        trips=[]
-        for x in TripsMaster.query.filter_by(user = User.query.get(userid)):
-            trips.append(x)	
-            places_visited = []
-		#print dir(trips)
-		#print trips	
-            for x in trips:
-                places_visited.append(str(x.start_location))
-                places_visited.append(str(x.end_location))
-		#print places_visited    
-        return render_template('dashboard.html',userid = userid)
-            
-@app.route('/search/<userid>', methods=["GET"])
-def search(userid):
+        user = User.query.get(request.args.get('userid'))
+        return json.dumps(dict(userid = user.id, name = user.name, profile_url = user.profile_url))
+    else:
+        user = User(name = request.args.get('name'), profile_url = request.args.get('profile_url'),
+                    fb_userid = request.args.get('userid'))
+    	#print 'Printing user',user
+        db.session.add(user)
+        # login_user(user)
+       # return redirect(url_for('index'))
+    	db.session.commit()
+    	userid = User.query.filter_by(name=user.name).first().id
+    	return json.dumps(dict(userid = user.id))
+	
+@app.route('/trip', methods=["GET","POST","PUT"])
+def trip():
     if request.method == 'GET':
-        start = request.args.get('From')
-        end = request.args.get('To')
-        search_info = dict()
-    	search_info['search_results'] = []
-        if start != '' and end != '':
-            for x in TripsMaster.query.filter_by(start_location=start).filter_by(end_location=end):
-                s_dict = dict(start_location=x.start_location, end_location=x.end_location, userid = x.userid)                
-                s_dict['map_markers'] = []
-                for y in TripDetails.query.filter_by(tripsmaster=TripsMaster.query.get(x.id)):
-                    s_dict['map_markers'].append(dict(location=y.location, text=y.text, image=y.image))
-                search_info['search_results'].append(s_dict)
-        elif start != '':
-            for x in TripsMaster.query.filter_by(start_location=start):
-                s_dict = dict(start_location=x.start_location, end_location=x.end_location, userid = x.userid)
-                search_info['search_results'].append(s_dict)
-    	elif end != '':
-            for x in TripsMaster.query.filter_by(end_location=end):
-                s_dict = dict(start_location=x.start_location, end_location=x.end_location, userid = x.userid)
-                search_info['search_results'].append(s_dict)
-        print json.dumps(search_info)
-
-        return render_template('dashboard.html',userid = userid)
-
-@app.route('/start/<userid>', methods=["GET", "POST"])
-def start(userid):
-    form = StartTripForm()
-
-    if request.method == 'GET':
-        return render_template('start.html',form=form)
-    if form.validate_on_submit():
-	print form
-	u = User.query.get(userid)
-	print u
-        tripsmaster = TripsMaster(user=u,trip_type=form.trip_type.data,
-                trip_friends=form.trip_friends.data,
-                vehicle=form.vehicle.data,
-                start_location = form.start_location.data,
-                start_timestamp = form.start_timestamp.data)
-        db.session.add(tripsmaster)
-        db.session.commit()
-    	tripid= tripsmaster.query.filter_by(start_timestamp=tripsmaster.start_timestamp).first().id
-
-    return redirect(url_for('tripstarted',userid=userid, tripid=tripid))
-
-@app.route('/end/<userid>/<tripid>', methods=["GET", "POST"])
-def end(tripid, userid):
-    form = EndTripForm()
-
-    if request.method == 'GET':
-        return render_template('end.html',form=form)
-
-    if form.validate_on_submit():
-        trip = TripsMaster.query.get(tripid)
-        trip.end_timestamp=form.end_timestamp.data
-        trip.privacy = form.privacy.data
-        trip.rating = form.rating.data
-        trip.end_location = form.end_location.data
-        db.session.commit()
-    	map_info = dict()
-    	trip = TripsMaster.query.get(tripid)
+        trip = TripsMaster.query.get(request.args.get('tripid'))
+        map_info = dict()
     	map_info['start_location'] = str(trip.start_location)
     	map_info['end_location'] = str(trip.end_location)
     	map_info['rating'] = str(trip.rating)
@@ -118,52 +51,89 @@ def end(tripid, userid):
     	map_info['end_timestamp'] = str(trip.end_timestamp)
     	map_info['map_markers'] = []
     	for x in TripDetails.query.filter_by(tripsmaster=TripsMaster.query.get(tripid)):
-        	map_info['map_markers'].append(dict(location=x.location, text=x.text, image=x.image))
+            map_info['map_markers'].append(dict(location=x.location, text=x.text, image=x.image))
     	print json.dumps(map_info)
+        return json.dumps(map_info)
+		
+    elif request.method == 'POST':
+        u = User.query.get(request.args.get('userid'))
+        tripsmaster = TripsMaster(user=u,trip_type=request.args.get('trip_type'),
+                                  trip_friends=request.args.get('trip_type'),
+                                  vehicle=request.args.get('vehicle'),
+                                  start_location = request.args.get('start_location'),
+                                  start_timestamp = request.args.get('start_timestamp'))
+        db.session.add(tripsmaster)
+        db.session.commit()
+        tripid= tripsmaster.query.filter_by(user=u).first().id
+        return json.dumps(dict(tripid = tripid))
+    else:
+        trip = TripsMaster.query.get(request.args.get('tripid'))
+        trip.end_timestamp=request.args.get('end_timestamp')
+        trip.privacy = request.args.get('privacy')
+        trip.rating = request.args.get('rating')
+        trip.end_location = request.args.get('end_location')
+        db.session.commit()
+        map_info = dict()
+        trip = TripsMaster.query.get(request.args.get('tripid'))
+        map_info['start_location'] = str(trip.start_location)
+        map_info['end_location'] = str(trip.end_location)
+        map_info['rating'] = str(trip.rating)
+        map_info['vehicle'] = str(trip.vehicle)
+        map_info['start_timestamp'] = str(trip.start_timestamp)
+        map_info['end_timestamp'] = str(trip.end_timestamp)
+        map_info['map_markers'] = []
+        for x in TripDetails.query.filter_by(tripsmaster=TripsMaster.query.get(tripid)):
+            map_info['map_markers'].append(dict(location=x.location, text=x.text, image=x.image))
+        return json.dumps(map_info)
 
-    return redirect(url_for('dashboard',userid=userid))
-
-@app.route('/pitstop/<userid>/<tripid>', methods=["GET", "POST"])
-def pitstop(tripid, userid):
-    form = PitStopForm()
-
+@app.route('/trips', methods=["GET"])
+def trips():
     if request.method == 'GET':
-        return render_template('pitstop.html',form=form,userid=userid,tripid=tripid)
+        trips=[]
+        for x in TripsMaster.query.filter_by(user = User.query.get(request.args.get('userid'))):
+            trips.append(x)	
+        trip_list=[]
+        for trip in trips:
+            map_info={}			
+            map_info['start_location'] = str(trip.start_location)
+            map_info['end_location'] = str(trip.end_location)
+            map_info['rating'] = str(trip.rating)
+            map_info['vehicle'] = str(trip.vehicle)
+            map_info['start_timestamp'] = str(trip.start_timestamp)
+            map_info['end_timestamp'] = str(trip.end_timestamp)
+            map_info['map_markers'] = []
+            for x in TripDetails.query.filter_by(tripsmaster=TripsMaster.query.get(tripid)):
+                map_info['map_markers'].append(dict(location=x.location, text=x.text, image=x.image))
+            trip_list.append(map_info)
+            return json.dumps(trip_list)
 
-    if form.validate_on_submit():
+@app.route('/pitstop', methods=["GET", "POST"])
+def pitstop(tripid, userid):
+    if request.method == 'GET':
+        tripdetails=[]
+        for x in TripDetails.query.filter_by(tripsmaster=request.args.get('tripid')):
+            tripdetails.append(dict(location=x.location, text=x.text, image=x.image))
+        return json.dumps(tripdetails)
+    else:
         file = request.files['image']
-        print dir(request)
-	if file and allowed_file(file.filename):
+        if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-           
-	    client = ImgurClient(client_id, client_secret)
-            response = client.upload_from_path('/home/chakshu/WanderLust/Uploads/'+filename)
-            
-	    tpid = TripsMaster.query.get(tripid)
-            tripdetails = TripDetails(tripsmaster = tpid,location=request.form['location'],
-                    timestamp=request.form['timestamp'],
-                    text=request.form['text'],
-                    image = str(response['link']))
-            db.session.add(tripdetails)
-       # login_user(user)
-       # return redirect(url_for('index'))
-            db.session.commit()
-	
-    return redirect(url_for('tripstarted',tripid=tripid, userid=userid))
-
-@app.route('/profileinfo', methods=["POST"])
-def profileinfo():
-    user = User(name = request.form['name'], profile_url = request.form['profile_url'],
-                    	fb_userid = request.form['id'])
-    #print 'Printing user',user
-    db.session.add(user)
-       # login_user(user)
-       # return redirect(url_for('index'))
-    db.session.commit()
-    userid = User.query.filter_by(name=user.name).first().id
-    return redirect(url_for('dashboard', userid = userid))
-
+        client = ImgurClient(client_id, client_secret)
+        response = client.upload_from_path('/home/chakshu/WanderLust/Uploads/'+filename)
+        tpid = TripsMaster.query.get(request.args.get('tripid'))
+        tripdetails = TripDetails(tripsmaster = tpid,location=request.args.get('location'),
+                                  timestamp=request.args.get('timestamp'),
+                                  text=request.args.get('text'),
+                                  image = str(response['link']))
+        db.session.add(tripdetails)
+       	# login_user(user)
+       	# return redirect(url_for('index'))
+        db.session.commit()
+        tripdetails=[]
+        for x in TripDetails.query.filter_by(tripsmaster=request.args.get('tripid')):
+            tripdetails.append(dict(location=x.location, text=x.text, image=x.image))
+        return json.dumps(tripdetails)
 
 @app.route('/chatbot/<threadID>/', methods=["GET"])
 def chatbot(threadID):
@@ -188,7 +158,36 @@ def chatbot(threadID):
     map_info['start_timestamp'] = str(trip.start_timestamp)
     map_info['end_timestamp'] = str(trip.end_timestamp)
     map_info['map_markers'] = []
+    response = 'Oh, looking for trip from '+map_info['start_location']+' to '+map_info['end_location'] + ' ? ' + ' You remember you took stop overs at '
     for x in TripDetails.query.filter_by(tripsmaster=TripsMaster.query.get(trip.id)):
        	map_info['map_markers'].append(dict(location=x.location, text=x.text, image=x.image))
+        response += x.location + ' with this view as ' + x.image + 'and comments as ' + x.text
+  		
+    #return json.dumps(map_info)
+    return response
 
-    return json.dumps(map_info)
+@app.route('/search', methods=["GET"])
+def search():
+    if request.method == 'GET':
+        start = request.args.get('From')
+        end = request.args.get('To')
+        search_info = dict()
+    	search_info['search_results'] = []
+        if start != '' and end != '':
+            for x in TripsMaster.query.filter_by(start_location=start).filter_by(end_location=end):
+                s_dict = dict(start_location=x.start_location, end_location=x.end_location, userid = x.userid)                
+                s_dict['map_markers'] = []
+                for y in TripDetails.query.filter_by(tripsmaster=TripsMaster.query.get(x.id)):
+                    s_dict['map_markers'].append(dict(location=y.location, text=y.text, image=y.image))
+                search_info['search_results'].append(s_dict)
+        elif start != '':
+            for x in TripsMaster.query.filter_by(start_location=start):
+                s_dict = dict(start_location=x.start_location, end_location=x.end_location, userid = x.userid)
+                search_info['search_results'].append(s_dict)
+    	elif end != '':
+            for x in TripsMaster.query.filter_by(end_location=end):
+                s_dict = dict(start_location=x.start_location, end_location=x.end_location, userid = x.userid)
+                search_info['search_results'].append(s_dict)
+	    print json.dumps(search_info)
+            return json.dumps(search_info)
+
